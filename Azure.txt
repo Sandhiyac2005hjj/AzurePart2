@@ -1,0 +1,51 @@
+import azure.ai.vision as visionsdk
+
+key = "cs1-37263632"  # Replace with your actual key
+endpoint = "REPLACE-WITH-YOUR-ENDPOINT"  # Replace with your actual endpoint
+
+def AnalyzeImage(endpoint: str, key: str) -> None:
+    service_options = visionsdk.VisionServiceOptions(endpoint, key)
+
+    # Specify the image file on disk to analyze. sample.jpg is a good example to show most features
+    vision_source = visionsdk.VisionSource(filename=r"sample.jpg")
+
+    analysis_options = visionsdk.ImageAnalysisOptions()
+    analysis_options.features = (
+        visionsdk.VisualFeatureTypes.objects,
+        visionsdk.VisualFeatureTypes.tags,
+        visionsdk.VisualFeatureTypes.people,
+        visionsdk.VisualFeatureTypes.text,
+    )
+
+    image_analyzer = visionsdk.ImageAnalyzer(service_options, vision_source, analysis_options)
+    print("Please wait for image analysis results...")
+    result = image_analyzer.analyze()
+
+    # Checks result.
+    if result.reason == visionsdk.ImageAnalysisResultReason.ANALYZED:
+        if result.people is not None:
+            print("People:")
+            for person in result.people:
+                print(f"   {person.name} with confidence {person.confidence}")
+                print(f"   Bounding box: {person.rectangle}")
+
+        if result.tags is not None:
+            print("Tags:")
+            for tag in result.tags:
+                if tag.confidence >= 0.9:
+                    print(f"   {tag.name} with confidence {tag.confidence}")
+
+        if result.text is not None:
+            print("Text:")
+            for line in result.text.lines:
+                print(f"   {line.text} with confidence {line.confidence}")
+    else:
+        error_details = visionsdk.ImageAnalysisErrorDetails.from_result(result)
+        print("Analysis failed.")
+        print(f"   Error reason: {error_details.reason}")
+        print(f"   Error code: {error_details.error_code}")
+        print(f"   Error message: {error_details.message}")
+
+        print("Did you set the computer vision endpoint and key?")
+
+AnalyzeImage(endpoint, key)
